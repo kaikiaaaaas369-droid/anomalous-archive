@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>異常事象調査アーカイブ</title>
+  <meta name="description" content="地図上に異常事象・心霊現象を記録・共有する没入型調査アーカイブ">
+
+  <!-- 明朝体フォント -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet.js -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLs=" crossorigin=""></script>
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ████████ ヘッダー（地図に重なるオーバーレイ） ████████ -->
+  <header id="site-header">
+    <div class="header-left">
+      <div class="header-sigil" aria-hidden="true">⚠</div>
+      <div class="header-titles">
+        <h1 class="header-main">異常事象調査アーカイブ</h1>
+        <p class="header-sub">ANOMALOUS EVENT INVESTIGATION ARCHIVE &ensp;|&ensp; 機密区分: Ω</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="header-status" class="status-badge">照合中…</span>
+    </div>
+  </header>
+
+
+  <!-- ████████ Leaflet 地図（フルスクリーン） ████████ -->
+  <div id="map" role="main" aria-label="異常事象地図"></div>
+
+
+  <!-- ████████ サイドパネル（右端・折りたたみ可） ████████ -->
+  <aside id="side-panel" aria-label="情報パネル">
+    <button id="panel-toggle" aria-label="パネル開閉" title="パネル開閉">◀</button>
+
+    <div id="panel-body">
+
+      <!-- 事象種別 凡例 -->
+      <div class="panel-section">
+        <h2 class="panel-heading">▍事象種別</h2>
+        <ul class="legend-list" id="legend-list" aria-label="凡例"></ul>
+      </div>
+
+      <!-- 最近の記録 -->
+      <div class="panel-section">
+        <h2 class="panel-heading">▍最近の記録</h2>
+        <div id="recent-events">
+          <p class="dim-text">記録なし</p>
+        </div>
+      </div>
+
+      <!-- 調査員ネットワーク（AI統合スタブ） -->
+      <div class="panel-section ai-stub">
+        <h2 class="panel-heading">▍調査員ネットワーク</h2>
+        <p class="dim-text small-text">
+          地図上の白衣マーカーをクリックして<br>
+          フィールドエージェントに接触せよ
+        </p>
+        <div class="ai-status">
+          <span class="ai-dot" aria-hidden="true"></span>
+          <span>AGENT-7 // 宇都宮支部 // 待機中</span>
+        </div>
+      </div>
+
+    </div><!-- /panel-body -->
+  </aside>
+
+
+  <!-- ████████ 地図操作ヒント ████████ -->
+  <div id="map-hint" aria-hidden="true">
+    <span>📍 地図をクリックして異常事象を記録する</span>
+  </div>
+
+
+  <!-- ████████ 投稿モーダル ████████ -->
+  <div id="post-modal" class="modal-overlay hidden" role="dialog"
+       aria-modal="true" aria-labelledby="post-modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-sigil" aria-hidden="true">記</span>
+        <h2 id="post-modal-title">異常事象の記録</h2>
+      </div>
+      <div class="modal-body">
+        <p class="modal-coord" id="post-location">📍 座標を取得中…</p>
+
+        <form id="post-form" novalidate>
+
+          <div class="form-group">
+            <label for="inp-type">事象種別</label>
+            <select id="inp-type" name="type">
+              <option value="幽霊・人影">👁 幽霊・人影</option>
+              <option value="怪光・発光体">✦ 怪光・発光体</option>
+              <option value="怪音・異音">〜 怪音・異音</option>
+              <option value="変死・遺体">✝ 変死・遺体</option>
+              <option value="空間異常">◎ 空間異常</option>
+              <option value="不明" selected>？ 不明</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="inp-content">事象の記録 <span class="required" aria-label="必須">*</span></label>
+            <textarea id="inp-content" name="content" rows="5" maxlength="500"
+              placeholder="観測した異常事象の詳細を記せ。日時・状況・目撃者の証言を含めること。（最大500文字）"></textarea>
+            <div class="char-count">
+              <span id="char-counter">0</span> / 500
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button type="button" id="post-cancel" class="btn btn-cancel">閉じる</button>
+            <button type="submit" id="post-submit" class="btn btn-submit">記録する</button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ████████ 調査員ダイアログ ████████ -->
+  <div id="bot-dialog" class="modal-overlay hidden" role="dialog"
+       aria-modal="true" aria-labelledby="bot-dialog-title">
+    <div class="modal-box bot-box">
+
+      <div class="bot-avatar" aria-hidden="true">
+        <div class="bot-figure">🥼</div>
+        <div class="bot-name">AGENT-7<br><small>宇都宮支部</small></div>
+      </div>
+
+      <div class="bot-content">
+        <h2 id="bot-dialog-title" class="sr-only">調査員からのメッセージ</h2>
+        <div class="bot-message-wrap">
+          <span class="bot-cursor" aria-hidden="true">▌</span>
+          <p id="bot-message" class="bot-message" aria-live="polite">…</p>
+        </div>
+
+        <div class="btn-row center">
+          <button id="bot-next"  class="btn btn-ghost">次のメッセージ</button>
+          <button id="bot-close" class="btn btn-cancel">閉じる</button>
+        </div>
+
+        <!-- [将来] AI対話インターフェース スタブ -->
+        <div class="ai-input-stub hidden" id="ai-input-area" aria-hidden="true">
+          <input type="text" id="ai-input"
+                 placeholder="調査員に話しかける…（準備中）" disabled>
+          <button class="btn btn-ghost" disabled>送信</button>
+        </div>
+        <p class="ai-coming-soon">
+          ※ AI対話機能は実装準備中です
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ████████ トースト通知 ████████ -->
+  <div id="toast" class="toast hidden" role="alert" aria-live="assertive"></div>
+
+
+  <script src="js/app.js"></script>
+</body>
+</html>
