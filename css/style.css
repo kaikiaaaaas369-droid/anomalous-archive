@@ -810,8 +810,8 @@ body::before {
 }
 
 .bot-avatar {
-  width: 120px;
-  min-height: 220px;
+  width: 130px;
+  min-width: 130px;
   flex-shrink: 0;
   background: linear-gradient(180deg, #1e1610 0%, #0d0b07 100%);
   border-right: 1px solid var(--col-border);
@@ -820,13 +820,16 @@ body::before {
   align-items: center;
   justify-content: flex-end;
   gap: 0;
-  padding: 16px 10px 0;
+  padding: 16px 8px 0;
+  overflow: hidden;
 }
 
 .bot-figure-img {
-  width: 100px;
+  width: 110px;
+  max-width: 110px;
   height: auto;
   display: block;
+  flex-shrink: 0;
   animation: bob 3.5s ease-in-out infinite;
   border-radius: 4px 4px 0 0;
 }
