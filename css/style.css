@@ -169,9 +169,9 @@ body::before {
   cursor: crosshair;
 }
 
-/* 地図タイルに「古地図」フィルター */
+/* 地図タイルに「古地図」フィルター — 明るさと古さを両立 */
 .leaflet-tile-pane {
-  filter: sepia(0.68) brightness(0.70) contrast(1.08) hue-rotate(6deg);
+  filter: sepia(0.45) brightness(0.88) contrast(1.05) hue-rotate(4deg) saturate(0.85);
 }
 
 /* Leaflet ズームコントロール */
@@ -818,7 +818,7 @@ body::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 0;
   padding: 16px 8px 0;
   overflow: hidden;
