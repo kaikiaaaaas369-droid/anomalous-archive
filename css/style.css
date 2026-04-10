@@ -169,9 +169,10 @@ body::before {
   cursor: crosshair;
 }
 
-/* 地図タイルに「古地図」フィルター — 明るさと古さを両立 */
+/* 地図タイルに「古地図」フィルター
+   Positron（明るいベース）にセピア＋彩度を落として羊皮紙感を演出 */
 .leaflet-tile-pane {
-  filter: sepia(0.45) brightness(0.88) contrast(1.05) hue-rotate(4deg) saturate(0.85);
+  filter: sepia(0.55) brightness(0.80) contrast(1.08) hue-rotate(8deg) saturate(0.65);
 }
 
 /* Leaflet ズームコントロール */
@@ -939,6 +940,8 @@ body::before {
   text-overflow: ellipsis;
   overflow: hidden;
 }
+/* hidden ユーティリティ（全要素共通） */
+.hidden { display: none !important; }
 .toast.hidden { display: none; }
 
 .toast-success { background:rgba(18,34,14,0.92); border-color:#2ea043; color:#72d083; }

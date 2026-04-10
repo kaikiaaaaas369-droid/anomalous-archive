@@ -55,8 +55,8 @@ function initMap() {
     zoomControl: false,
   });
 
-  // CartoDB Dark Matter タイル（セピアはCSSで）
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  // CartoDB Positron（明るいベース）+ CSSセピアで古地図感を演出
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' +
       ' &copy; <a href="https://carto.com/">CARTO</a>',
