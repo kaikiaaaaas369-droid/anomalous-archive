@@ -170,9 +170,9 @@ body::before {
 }
 
 /* 地図タイルに「古地図」フィルター
-   Positron（明るいベース）にセピア＋彩度を落として羊皮紙感を演出 */
+   Positron（明るいベース）にセピアをかけて羊皮紙風の古地図に */
 .leaflet-tile-pane {
-  filter: sepia(0.55) brightness(0.80) contrast(1.08) hue-rotate(8deg) saturate(0.65);
+  filter: sepia(0.50) brightness(0.92) contrast(1.04) hue-rotate(6deg) saturate(0.75);
 }
 
 /* Leaflet ズームコントロール */
