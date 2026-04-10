@@ -225,41 +225,76 @@ body::before {
 
 
 /* ══════════════════════════════════════════════════════════
-   調査員マーカー
+   調査員 固定ボタン（画面右下）
 ══════════════════════════════════════════════════════════ */
-.investigator-pin {
-  width: 52px;
-  height: 52px;
+#investigator-fixed {
+  position: fixed;
+  right: 24px;
+  bottom: 70px;
+  z-index: 2500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.85));
+}
+
+#investigator-fixed:hover {
+  transform: translateY(-6px) scale(1.06);
+}
+
+#investigator-fixed:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+#investigator-fixed:focus-visible {
+  outline: 2px solid var(--col-amber);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+#investigator-img {
+  width: 110px;
+  height: auto;
+  display: block;
+  animation: bob 3.5s ease-in-out infinite;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* 画像読み込み失敗時のフォールバック */
+.investigator-fallback {
+  width: 80px;
+  height: 80px;
+  font-size: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  border: 2px solid rgba(255,255,255,0.55);
+  border: 2px solid rgba(255,255,255,0.4);
   border-radius: 50%;
   background: radial-gradient(circle, #3c3228 0%, #14100a 100%);
-  box-shadow:
-    0 0 18px rgba(255,255,255,0.28),
-    0 0 36px var(--glow-amber),
-    0 4px 14px rgba(0,0,0,0.92);
-  cursor: pointer;
-  animation: pulse-glow 2.8s ease-in-out infinite;
-  transition: transform 0.15s ease;
+  box-shadow: 0 0 24px var(--glow-amber);
+  animation: bob 3.5s ease-in-out infinite, pulse-glow 2.8s ease-in-out infinite;
 }
-.investigator-pin:hover { transform: scale(1.12); }
+
+.investigator-label {
+  font-family: var(--font);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--col-parchment-dim);
+  background: rgba(6,4,2,0.82);
+  border: 1px solid var(--col-border);
+  padding: 2px 10px;
+  border-radius: 2px;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
 
 @keyframes pulse-glow {
-  0%, 100% {
-    box-shadow:
-      0 0 18px rgba(255,255,255,0.28),
-      0 0 36px var(--glow-amber),
-      0 4px 14px rgba(0,0,0,0.92);
-  }
-  50% {
-    box-shadow:
-      0 0 28px rgba(255,255,255,0.45),
-      0 0 56px rgba(200,134,10,0.6),
-      0 4px 14px rgba(0,0,0,0.92);
-  }
+  0%, 100% { filter: drop-shadow(0 6px 18px rgba(0,0,0,0.85)) drop-shadow(0 0 8px rgba(200,134,10,0.3)); }
+  50%       { filter: drop-shadow(0 6px 18px rgba(0,0,0,0.85)) drop-shadow(0 0 20px rgba(200,134,10,0.6)); }
 }
 
 

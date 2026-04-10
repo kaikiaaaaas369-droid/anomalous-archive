@@ -80,6 +80,20 @@
     <span>📍 地図をクリックして異常事象を記録する</span>
   </div>
 
+  <!-- ████████ 調査員 固定ボタン（右下） ████████ -->
+  <div id="investigator-fixed"
+       role="button"
+       tabindex="0"
+       title="AGENT-7 — クリックして接触する"
+       aria-label="調査員AGENT-7に接触する">
+    <img src="assets/investigator.png"
+         alt="調査員 AGENT-7"
+         id="investigator-img"
+         onerror="this.style.display='none';document.getElementById('investigator-fallback').style.display='flex'">
+    <div id="investigator-fallback" class="investigator-fallback" style="display:none">🥼</div>
+    <div class="investigator-label">AGENT-7</div>
+  </div>
+
 
   <!-- ████████ 投稿モーダル ████████ -->
   <div id="post-modal" class="modal-overlay hidden" role="dialog"

@@ -70,30 +70,14 @@ function initMap() {
   // 地図クリック → 投稿モーダル表示
   map.on('click', onMapClick);
 
-  // 調査員マーカー設置
-  addInvestigator();
+  // ※ 調査員は固定HTML要素として配置（Leafletマーカーではない）
 }
 
 
 /* ══════════════════════════════════════════════════════════
-   調査員（白衣のボット）マーカー
-   場所: 栃木県宇都宮市付近
+   調査員は index.html の #investigator-fixed（固定HTML要素）
+   DOMContentLoaded 内でクリックイベントを登録する
 ══════════════════════════════════════════════════════════ */
-function addInvestigator() {
-  const LAT = 36.5547;
-  const LNG = 139.8835;
-
-  const icon = L.divIcon({
-    html: '<div class="investigator-pin" title="AGENT-7 — クリックして接触する">🥼</div>',
-    className: '',
-    iconSize:   [52, 52],
-    iconAnchor: [26, 26],
-    popupAnchor:[0, -32],
-  });
-
-  const marker = L.marker([LAT, LNG], { icon, zIndexOffset: 1000 }).addTo(map);
-  marker.on('click', showBotDialog);
-}
 
 
 /* ══════════════════════════════════════════════════════════
@@ -443,6 +427,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('inp-content').addEventListener('input', function () {
     document.getElementById('char-counter').textContent = this.value.length;
+  });
+
+  /* ── 調査員 固定ボタン ──────────────────────────────────── */
+  const investigator = document.getElementById('investigator-fixed');
+  investigator.addEventListener('click', showBotDialog);
+  investigator.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showBotDialog(); }
   });
 
   /* ── ボットダイアログ ───────────────────────────────── */
