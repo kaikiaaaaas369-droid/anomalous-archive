@@ -15,7 +15,10 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <link rel="stylesheet" href="css/style.css">
+  <!-- Three.js (遺物3D展示) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <link rel="stylesheet" href="css/style.css?v=2">
 </head>
 <body>
 
@@ -227,6 +230,33 @@
   </footer>
 
 
+  <!-- ████████ 3D遺物展示ケース ████████ -->
+  <div id="artifact-showcase" aria-label="遺物アーカイブ">
+    <div id="artifact-header">
+      <span class="artifact-sigil" aria-hidden="true">⬡</span>
+      <span class="artifact-title-text">遺物アーカイブ</span>
+      <button id="artifact-collapse-btn" title="折りたたむ" aria-label="折りたたむ">▼</button>
+    </div>
+    <div id="artifact-body">
+      <div id="artifact-canvas-wrap">
+        <canvas id="artifact-canvas" aria-label="3D遺物（クリックで調査）"></canvas>
+        <p id="artifact-label" class="artifact-click-label" aria-hidden="true">— タップして調査 —</p>
+        <div id="artifact-hover-ring" aria-hidden="true"></div>
+      </div>
+      <div id="artifact-info">
+        <p id="artifact-name" class="artifact-name">遺物-Ω01：光学観測器</p>
+        <p id="artifact-desc" class="artifact-desc">現場で発見された謎の光学機器</p>
+      </div>
+      <div id="artifact-nav">
+        <button id="artifact-prev" class="artifact-nav-btn" aria-label="前の遺物">◀</button>
+        <span id="artifact-index" class="artifact-index">1 / 3</span>
+        <button id="artifact-next" class="artifact-nav-btn" aria-label="次の遺物">▶</button>
+      </div>
+    </div>
+  </div>
+
+
   <script src="js/app.js?v=9"></script>
+  <script src="js/artifact.js?v=1"></script>
 </body>
 </html>
