@@ -248,16 +248,20 @@ document.addEventListener('DOMContentLoaded', function () {
     g.add(edges);
 
     // 封印の縦バー
-    g.add(Object.assign(new THREE.Mesh(
+    const vBar = new THREE.Mesh(
       new THREE.BoxGeometry(0.055, 0.70, 0.04),
       makeMetal(0x8b3a10, 0.65)
-    ), { position: new THREE.Vector3(0, 0, 0.43) }));
+    );
+    vBar.position.set(0, 0, 0.43);
+    g.add(vBar);
 
     // 封印の横バー
-    g.add(Object.assign(new THREE.Mesh(
+    const hBar = new THREE.Mesh(
       new THREE.BoxGeometry(1.00, 0.055, 0.04),
       makeMetal(0x8b3a10, 0.65)
-    ), { position: new THREE.Vector3(0, 0, 0.43) }));
+    );
+    hBar.position.set(0, 0, 0.43);
+    g.add(hBar);
 
     // 錠前
     const lock = new THREE.Mesh(
