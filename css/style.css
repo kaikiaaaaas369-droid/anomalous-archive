@@ -1000,3 +1000,304 @@ body::before {
 
   #map-hint { font-size: 11px; padding: 6px 14px; bottom: 14px; }
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   入室オーバーレイ（巻物アニメーション）
+══════════════════════════════════════════════════════════ */
+
+/* 黒背景フルスクリーンオーバーレイ */
+#entry-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  transition: opacity 0.8s ease;
+}
+#entry-overlay.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+#entry-overlay.hidden {
+  display: none !important;
+}
+
+/* 巻物全体（ロッド＋羊皮紙を横並び） */
+#scroll-container {
+  display: flex;
+  align-items: stretch;
+  max-width: 95vw;
+}
+
+/* 巻物ロッド（木製円柱） */
+.scroll-rod {
+  width: 26px;
+  min-height: 220px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(
+    to right,
+    #2a1206 0%,
+    #6b3010 18%,
+    #9a4e1c 40%,
+    #b86228 52%,
+    #9a4e1c 64%,
+    #6b3010 82%,
+    #2a1206 100%
+  );
+  border-radius: 13px;
+  box-shadow:
+    inset -3px 0 5px rgba(0,0,0,0.45),
+    inset  2px 0 4px rgba(255,200,120,0.12),
+    0 4px 18px rgba(0,0,0,0.75);
+  overflow: visible;
+}
+
+/* ロッド端の丸い飾り（上下のノブ） */
+.scroll-rod::before,
+.scroll-rod::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38px;
+  height: 22px;
+  background: linear-gradient(
+    to right,
+    #3a1a08 0%,
+    #7a3818 28%,
+    #a05028 50%,
+    #7a3818 72%,
+    #3a1a08 100%
+  );
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  z-index: 3;
+}
+.scroll-rod::before { top: -9px; }
+.scroll-rod::after  { bottom: -9px; }
+
+/* 羊皮紙（横方向に展開する） */
+#scroll-parchment {
+  width: 0;
+  overflow: hidden;
+  transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  background:
+    radial-gradient(ellipse at 18% 25%, rgba(255,240,170,0.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 82% 75%, rgba(180,130,50,0.22) 0%, transparent 55%),
+    linear-gradient(170deg, #eed878 0%, #dcb35c 35%, #c9a040 70%, #b8902e 100%);
+  box-shadow:
+    inset  5px 0 14px rgba(120,70,10,0.28),
+    inset -5px 0 14px rgba(120,70,10,0.28),
+    inset  0  5px 22px rgba(80,40,0,0.18);
+}
+#scroll-parchment.open {
+  width: clamp(280px, 80vw, 640px);
+}
+
+/* 羊皮紙内コンテンツラッパー */
+#scroll-inner {
+  min-width: clamp(280px, 80vw, 640px);
+  padding: 36px 34px 28px;
+  color: #4a3728;
+  font-family: var(--font);
+  position: relative;
+  overflow-y: auto;
+  max-height: 82vh;
+}
+
+/* 透かし文字 */
+#scroll-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-18deg);
+  font-size: 7rem;
+  font-weight: 900;
+  color: rgba(100,60,20,0.055);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  letter-spacing: 0.3em;
+}
+
+/* タイトル「利用規約（指針）」 */
+#scroll-title {
+  font-size: clamp(1.1rem, 3.5vw, 1.6rem);
+  font-weight: 700;
+  text-align: center;
+  color: #3a2010;
+  letter-spacing: 0.18em;
+  margin-bottom: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(100,60,20,0.32);
+  opacity: 0;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.9s ease, color 0.2s;
+}
+#scroll-title.visible { opacity: 1; }
+#scroll-title:hover   { color: #6a3018; }
+
+/* 展開ヒント */
+.scroll-hint {
+  text-align: center;
+  font-size: 0.77rem;
+  color: rgba(74,55,40,0.6);
+  margin-bottom: 14px;
+  letter-spacing: 0.14em;
+  opacity: 0;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.9s ease 0.2s, color 0.2s;
+}
+.scroll-hint.visible       { opacity: 1; }
+.scroll-hint.hint-collapse { opacity: 0 !important; pointer-events: none; }
+
+/* 条文エリア（折りたたみ） */
+#scroll-terms {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.75s ease, opacity 0.5s ease;
+  margin-bottom: 0;
+}
+#scroll-terms.expanded {
+  max-height: 1400px;
+  opacity: 1;
+  margin-bottom: 18px;
+}
+
+/* 条文リスト */
+#scroll-terms dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 14px;
+  margin-bottom: 18px;
+}
+#scroll-terms dt {
+  font-weight: 700;
+  font-size: 0.80rem;
+  color: #3a2010;
+  white-space: nowrap;
+  padding-top: 3px;
+  letter-spacing: 0.05em;
+}
+#scroll-terms dd {
+  font-size: 0.79rem;
+  color: #5a3a28;
+  line-height: 1.68;
+  border-bottom: 1px dotted rgba(100,70,30,0.3);
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+/* AGENT-7 警告ブロック */
+.agent7-warning {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: rgba(80,40,10,0.10);
+  border: 1px solid rgba(100,60,20,0.38);
+  border-left: 3px solid #8b3a10;
+  padding: 10px 14px;
+  border-radius: 2px;
+}
+.agent7-warn-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  color: #8b3a10;
+  margin-top: 2px;
+}
+.agent7-warning p {
+  font-size: 0.79rem;
+  color: #4a2e1a;
+  line-height: 1.7;
+}
+
+/* 入室ボタン */
+#entry-btn {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 13px 24px;
+  font-family: var(--font);
+  font-size: 0.90rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: #f0e0b0;
+  background: linear-gradient(135deg, #5a2010 0%, #8b3a10 50%, #5a2010 100%);
+  border: 1px solid #a04020;
+  border-radius: 2px;
+  cursor: pointer;
+  box-shadow: 0 3px 14px rgba(80,20,0,0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity   0.55s ease,
+    background 0.22s,
+    transform  0.12s,
+    box-shadow 0.22s;
+}
+#entry-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+#entry-btn:hover {
+  background: linear-gradient(135deg, #7a2818 0%, #a04820 50%, #7a2818 100%);
+  box-shadow: 0 5px 18px rgba(100,30,0,0.65);
+  transform: translateY(-1px);
+}
+#entry-btn:active { transform: translateY(0); }
+
+
+/* ══════════════════════════════════════════════════════════
+   フッター 利用規約ボタン
+══════════════════════════════════════════════════════════ */
+#footer-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1800;
+  display: flex;
+  justify-content: center;
+  padding: 5px 0 6px;
+  pointer-events: none;
+}
+
+#terms-reopen {
+  font-family: var(--font);
+  font-size: 0.70rem;
+  color: var(--col-parchment-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 14px;
+  letter-spacing: 0.12em;
+  opacity: 0.5;
+  pointer-events: auto;
+  transition: opacity 0.2s;
+}
+#terms-reopen:hover { opacity: 0.9; }
+
+/* ── モバイル: 巻物を縦向きに調整 ─────────────────────── */
+@media (max-width: 640px) {
+  #scroll-inner {
+    padding: 26px 20px 22px;
+    min-width: clamp(260px, 76vw, 440px);
+  }
+  #scroll-parchment.open {
+    width: clamp(260px, 76vw, 440px);
+  }
+  .scroll-rod { width: 20px; }
+  .scroll-rod::before,
+  .scroll-rod::after { width: 28px; }
+  #scroll-watermark { font-size: 5rem; }
+}

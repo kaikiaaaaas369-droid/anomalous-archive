@@ -389,6 +389,66 @@ function showToast(msg, type = 'info') {
 
 
 /* ══════════════════════════════════════════════════════════
+   入室オーバーレイ（巻物アニメーション）
+══════════════════════════════════════════════════════════ */
+function initEntryOverlay() {
+  const overlay   = document.getElementById('entry-overlay');
+  const parchment = document.getElementById('scroll-parchment');
+  const title     = document.getElementById('scroll-title');
+  const hint      = document.getElementById('scroll-hint');
+  const terms     = document.getElementById('scroll-terms');
+  const entryBtn  = document.getElementById('entry-btn');
+  const termsBtn  = document.getElementById('terms-reopen');
+
+  if (!overlay) return;
+
+  /* ① 0.5秒後: 巻物を横に開く */
+  setTimeout(() => {
+    parchment.classList.add('open');
+  }, 500);
+
+  /* ② 巻物が開き切った後: タイトル＆ヒントをフェードイン */
+  setTimeout(() => {
+    title.classList.add('visible');
+    hint.classList.add('visible');
+  }, 1600);
+
+  /* タイトル / ヒントをクリック → 条文展開 */
+  function expandTerms() {
+    if (terms.classList.contains('expanded')) return;
+    terms.classList.add('expanded');
+    hint.classList.add('hint-collapse');
+    /* 条文が開いてからボタンを表示 */
+    setTimeout(() => {
+      entryBtn.classList.add('visible');
+    }, 500);
+  }
+
+  title.addEventListener('click', expandTerms);
+  hint.addEventListener('click', expandTerms);
+
+  /* 入室ボタン → オーバーレイをフェードアウトして消す */
+  entryBtn.addEventListener('click', () => {
+    overlay.classList.add('fade-out');
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+    }, 820);
+  });
+
+  /* フッター「利用規約」→ 条文展開状態でオーバーレイを再表示 */
+  termsBtn.addEventListener('click', () => {
+    overlay.classList.remove('hidden', 'fade-out');
+    overlay.style.opacity = '';
+    parchment.classList.add('open');
+    title.classList.add('visible');
+    hint.classList.add('hint-collapse');
+    terms.classList.add('expanded');
+    entryBtn.classList.add('visible');
+  });
+}
+
+
+/* ══════════════════════════════════════════════════════════
    [将来] AI 対話インターフェース スタブ
    OpenAI API / GAS経由で AGENT-7 を対話可能にする場合はここに実装
    ──────────────────────────────────────────────────────
@@ -409,6 +469,9 @@ function showToast(msg, type = 'info') {
    DOMContentLoaded — 起動処理
 ══════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
+
+  /* ── 入室オーバーレイ ───────────────────────────────── */
+  initEntryOverlay();
 
   /* ── 地図・データ初期化 ─────────────────────────────── */
   initMap();

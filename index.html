@@ -181,6 +181,52 @@
   <div id="toast" class="toast hidden" role="alert" aria-live="assertive"></div>
 
 
-  <script src="js/app.js?v=8"></script>
+  <!-- ████████ 入室オーバーレイ（巻物アニメーション） ████████ -->
+  <div id="entry-overlay" role="dialog" aria-modal="true" aria-label="利用規約（指針）">
+    <div id="scroll-container">
+      <div class="scroll-rod scroll-rod-left" aria-hidden="true"></div>
+
+      <div id="scroll-parchment">
+        <div id="scroll-inner">
+          <p id="scroll-watermark" aria-hidden="true">機密</p>
+
+          <h2 id="scroll-title">利用規約（指針）</h2>
+          <p class="scroll-hint" id="scroll-hint">— タップして指針を展開 —</p>
+
+          <div id="scroll-terms">
+            <dl>
+              <dt>第一条　記録の義務</dt>
+              <dd>調査員は観測した異常事象を、可能な限り速やかに本アーカイブへ記録する義務を負う。虚偽の報告は厳禁とする。</dd>
+              <dt>第二条　守秘の原則</dt>
+              <dd>本アーカイブに記録された情報は機密扱いとする。無許可の第三者への開示は禁ずる。</dd>
+              <dt>第三条　安全の確保</dt>
+              <dd>現場調査においては常に身の安全を最優先とせよ。単独行動・深夜の現地訪問は組織として推奨しない。</dd>
+              <dt>第四条　信頼度の管理</dt>
+              <dd>他の調査員の記録を検証し、信頼できる事象には「追認」を行うこと。根拠なき追認は禁ずる。</dd>
+              <dt>第五条　組織への忠誠</dt>
+              <dd>本アーカイブは調査員の自発的な参加によって成立している。組織の目的に反する行為は、登録の抹消をもって対処する。</dd>
+            </dl>
+            <div class="agent7-warning">
+              <span class="agent7-warn-icon" aria-hidden="true">⚠</span>
+              <p>AGENT-7より：<br>上記指針に同意の上、アーカイブへ入室せよ。<br>記録は永遠に消えない。</p>
+            </div>
+          </div><!-- /scroll-terms -->
+
+          <button id="entry-btn">アーカイブへ入室</button>
+        </div><!-- /scroll-inner -->
+      </div><!-- /scroll-parchment -->
+
+      <div class="scroll-rod scroll-rod-right" aria-hidden="true"></div>
+    </div><!-- /scroll-container -->
+  </div><!-- /entry-overlay -->
+
+
+  <!-- ████████ フッター 利用規約ボタン ████████ -->
+  <footer id="footer-bar">
+    <button id="terms-reopen" title="利用規約を再表示">利用規約</button>
+  </footer>
+
+
+  <script src="js/app.js?v=9"></script>
 </body>
 </html>
