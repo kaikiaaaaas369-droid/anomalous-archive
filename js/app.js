@@ -139,38 +139,61 @@ function addEventMarker(ev) {
   });
 
   const marker = L.marker([ev.lat, ev.lng], { icon }).addTo(map);
-  marker.on('click', () => openEventPopup(ev, marker));
+  marker.on('click', e => {
+    L.DomEvent.stopPropagation(e);   // 地図クリック（投稿モーダル）を防ぐ
+    openEventPopup(ev);
+  });
 
   allEvents.push({ id: ev.id, marker, data: ev });
 }
 
 
 /* ══════════════════════════════════════════════════════════
-   事象ポップアップ（追認ボタン付き）
+   事象ポップアップ（追認 + コメント機能）
+   ※ marker.bindPopup は使わず openOn(map) で何度でも開けるようにする
 ══════════════════════════════════════════════════════════ */
-function openEventPopup(ev, marker) {
+function openEventPopup(ev) {
   const tc     = getTypeConfig(ev.type);
   const relBar = buildRelBar(ev.reliability);
 
-  const popup = L.popup({ className: 'custom-popup-wrap', maxWidth: 320, minWidth: 220 })
-    .setContent(`
-      <div class="popup-content">
-        <div class="popup-type" style="color:${tc.color}">
-          ${tc.icon}&ensp;${escHtml(ev.type)}
+  const html = `
+    <div class="popup-content">
+      <div class="popup-type" style="color:${tc.color}">
+        ${tc.icon}&ensp;${escHtml(ev.type)}
+      </div>
+      <div class="popup-datetime">📅 ${escHtml(ev.datetime)}</div>
+      <p class="popup-text">${escHtml(ev.content)}</p>
+      <div class="popup-footer">
+        <span class="popup-reliability">${relBar}</span>
+        <button class="btn-endorse" id="endorse-${ev.id}"
+          onclick="window.endorseEvent(${ev.id}, this)">
+          ＋ 追認
+        </button>
+      </div>
+
+      <div class="popup-comments-section">
+        <div class="popup-comments-heading">— 調査コメント —</div>
+        <div id="pcl-${ev.id}" class="popup-comment-list">
+          <span class="popup-comment-dim">照合中…</span>
         </div>
-        <div class="popup-datetime">📅 ${escHtml(ev.datetime)}</div>
-        <p class="popup-text">${escHtml(ev.content)}</p>
-        <div class="popup-footer">
-          <span class="popup-reliability">${relBar}</span>
-          <button class="btn-endorse" id="endorse-${ev.id}"
-            onclick="window.endorseEvent(${ev.id}, this)">
-            ＋ 追認
-          </button>
+        <div class="popup-comment-form">
+          <textarea id="pci-${ev.id}" class="popup-comment-input"
+            placeholder="コメントを記録せよ（文字数制限なし）"></textarea>
+          <button class="popup-comment-btn"
+            onclick="window.submitComment(${ev.id}, this)">記録</button>
         </div>
       </div>
-    `);
+    </div>
+  `;
 
-  marker.bindPopup(popup).openPopup();
+  // マーカーに bind しない → 何度でも開閉可能
+  L.popup({ className: 'custom-popup-wrap', maxWidth: 380, minWidth: 260 })
+    .setLatLng([ev.lat, ev.lng])
+    .setContent(html)
+    .openOn(map);
+
+  // DOM 生成後にコメントを非同期取得
+  setTimeout(() => loadComments(ev.id), 80);
 }
 
 /* 信頼度バー（10マス） */
@@ -180,6 +203,76 @@ function buildRelBar(n) {
   return `<span title="信頼度スコア: ${n}">` +
          `${'▮'.repeat(filled)}${'▯'.repeat(empty)}</span> (${n})`;
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   コメント読み込み（GET ?action=comments&id=N）
+══════════════════════════════════════════════════════════ */
+async function loadComments(eventId) {
+  const listEl = document.getElementById(`pcl-${eventId}`);
+  if (!listEl) return;
+
+  try {
+    const res  = await fetch(`${GAS_URL}?action=comments&id=${eventId}`);
+    const json = await res.json();
+    if (json.status !== 'ok') throw new Error(json.message);
+
+    if (!json.comments || json.comments.length === 0) {
+      listEl.innerHTML = '<span class="popup-comment-dim">記録なし</span>';
+    } else {
+      listEl.innerHTML = json.comments.map(c => `
+        <div class="popup-comment-item">
+          <span class="popup-comment-time">${escHtml(c.datetime)}</span>
+          <p class="popup-comment-text">${escHtml(c.comment)}</p>
+        </div>
+      `).join('');
+    }
+
+  } catch (_) {
+    if (document.getElementById(`pcl-${eventId}`)) {
+      document.getElementById(`pcl-${eventId}`).innerHTML =
+        '<span class="popup-comment-dim">読込失敗</span>';
+    }
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   コメント送信（POST action=addComment）
+   グローバルに公開 → ポップアップ内のインラインonclickから呼ぶ
+══════════════════════════════════════════════════════════ */
+window.submitComment = async function(eventId, btn) {
+  const input = document.getElementById(`pci-${eventId}`);
+  if (!input) return;
+
+  const comment = input.value.trim();
+  if (!comment) {
+    showToast('コメントを入力してください', 'warn');
+    return;
+  }
+
+  btn.disabled    = true;
+  btn.textContent = '記録中…';
+
+  try {
+    const body = new URLSearchParams();
+    body.append('data', JSON.stringify({ action: 'addComment', eventId, comment }));
+
+    const res  = await fetch(GAS_URL, { method: 'POST', body });
+    const json = await res.json();
+    if (json.status !== 'ok') throw new Error(json.message || '送信失敗');
+
+    input.value = '';
+    showToast('✓ コメントを記録した', 'success');
+    loadComments(eventId);   // 一覧をリロード
+
+  } catch (err) {
+    showToast(`⚠ 記録失敗: ${err.message}`, 'error');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = '記録';
+  }
+};
 
 
 /* ══════════════════════════════════════════════════════════
