@@ -9,7 +9,7 @@
    ★ 設定欄
    GAS をデプロイ後、発行された「ウェブアプリURL」をここに貼る
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycby1Tsd03QSkh1NBJyMPAsHngKOHMOvSKnajfMJux9-505SeG6ep9Od3yVrZbeog4YNBAw/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzTMeOzoXjU2ArDwJ-HKpa8nNEou4bVyWhMCxxCGZI9fxL2E075vrBsWZTu8pU7nyuduA/exec';
 
 
 /* ── 事象種別マスター ───────────────────────────────────── */
