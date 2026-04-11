@@ -178,7 +178,7 @@ function openEventPopup(ev) {
         </div>
         <div class="popup-comment-form">
           <textarea id="pci-${ev.id}" class="popup-comment-input"
-            placeholder="コメントを記録せよ（文字数制限なし）"></textarea>
+            placeholder="コメントを記録せよ"></textarea>
           <button class="popup-comment-btn"
             onclick="window.submitComment(${ev.id}, this)">記録</button>
         </div>
