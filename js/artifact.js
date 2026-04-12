@@ -474,4 +474,13 @@ document.addEventListener('DOMContentLoaded', function () {
     collapseBtn.setAttribute('aria-label', isCollapsed ? '展開する' : '折りたたむ');
   });
 
+  /* スマホ縦画面では初期状態で折りたたむ */
+  if (window.matchMedia('(max-width: 640px)').matches) {
+    isCollapsed = true;
+    artifactBody.classList.add('collapsed');
+    collapseBtn.textContent = '▲';
+    collapseBtn.title       = '展開する';
+    collapseBtn.setAttribute('aria-label', '展開する');
+  }
+
 });

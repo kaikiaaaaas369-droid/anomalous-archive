@@ -1084,72 +1084,151 @@ body::before {
 @media (max-width: 640px) {
   :root {
     --panel-w: 230px;
-    --header-h: 54px;
+    --header-h: 52px;
   }
 
-  .header-sub  { display: none; }
-  .header-main { font-size: 14px; letter-spacing: 0.14em; }
+  /* ── ヘッダー ─────────────────────────────────────────── */
+  .header-sub   { display: none; }
+  .header-main  {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 195px;
+  }
+  .header-left  { gap: 8px; padding: 0 14px; }
+  .header-sigil { font-size: 18px; }
+  #site-header  { padding: 0; }
 
-  /* ── サイドパネル ────────────────────────────────────────
-     デフォルト: トグルタブだけ右端に出た状態（デスクトップの collapsed 相当）
-     .open クラスで完全表示
+  /* ── サイドパネル ─────────────────────────────────────────
+     デフォルト: トグルタブ（26px）だけ右端に出た状態
+     .open クラスで完全スライドイン
   ─────────────────────────────────────────────────────── */
   #side-panel {
     transform: translateX(calc(var(--panel-w) - var(--toggle-w)));
     z-index: 2200;
-    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.28s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s ease;
   }
   #side-panel.open {
     transform: translateX(0);
-    box-shadow: -6px 0 28px rgba(0, 0, 0, 0.65);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.7);
   }
-  /* collapsed は旧互換（デフォルトと同じ） */
   #side-panel.collapsed {
     transform: translateX(calc(var(--panel-w) - var(--toggle-w)));
     box-shadow: none;
   }
 
-  /* ── investigator-fixed: サイドバー open 時に隠す ─────── */
+  /* ── investigator-fixed ────────────────────────────────
+     open 時は非表示
+     ズームコントロール（~80px）の上に配置: bottom:100px
+  ─────────────────────────────────────────────────────── */
   body.sp-open #investigator-fixed {
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.22s ease;
   }
   #investigator-fixed {
+    right: 12px;
+    bottom: 100px;
+    padding: 4px 4px 0;
     transition: opacity 0.22s ease;
   }
+  #investigator-img { width: 72px; }
+  .investigator-label { font-size: 9px; letter-spacing: 0.1em; padding: 2px 6px 3px; }
 
-  /* ── ボットダイアログ ────────────────────────────────────
-     サイドバーが閉じているとき: avatar 非表示・縦積み
-     サイドバーが開いているとき: avatar 表示・横並び（デスクトップ同様）
+  /* ── 地図ヒント ──────────────────────────────────────────
+     フッターバー（~30px）の上に出す: bottom:42px
   ─────────────────────────────────────────────────────── */
+  #map-hint {
+    font-size: 10px;
+    padding: 5px 14px;
+    bottom: 42px;
+    max-width: 80vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-  /* サイドバー閉: avatar 隠して縦一列 */
-  .bot-box {
+  /* ── ポップアップ ────────────────────────────────────── */
+  .popup-content {
+    min-width: unset;
+    max-width: calc(100vw - 36px);
+    padding: 12px 13px;
+  }
+  /* コメントフォーム: 縦積みでタップしやすく */
+  .popup-comment-form {
     flex-direction: column;
   }
-  .bot-avatar {
-    display: none;
+  .popup-comment-btn {
+    height: auto;
+    width: 100%;
+    padding: 8px;
+    align-self: stretch;
   }
+  .popup-comment-input { min-height: 60px; }
 
-  /* サイドバー open: avatar 表示・横並びに切替 */
-  body.sp-open .bot-box {
-    flex-direction: row;
+  /* ── モーダル全般 ────────────────────────────────────── */
+  .modal-box {
+    max-height: 88vh;
+    width: calc(100vw - 24px);
+    margin: 0 12px;
   }
+  .modal-header { padding: 14px 16px 12px; }
+  .modal-body   { padding: 12px 16px 16px; }
+
+  /* ── ボットダイアログ ─────────────────────────────────
+     サイドバー閉: avatar 非表示・縦一列（コンテンツのみ）
+     サイドバー開: avatar 表示・横並び（デスクトップ同様）
+  ─────────────────────────────────────────────────────── */
+  .bot-box    { flex-direction: column; }
+  .bot-avatar { display: none; }
+
+  body.sp-open .bot-box { flex-direction: row; }
   body.sp-open .bot-avatar {
     display: flex;
-    width: 110px;
-    min-width: 110px;
+    width: 100px;
+    min-width: 100px;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 14px 8px 0;
+    padding: 12px 6px 0;
     border-right: 1px solid var(--col-border);
     border-bottom: none;
+    min-height: unset;
   }
+  body.sp-open .bot-figure-img { width: 88px; }
 
-  #map-hint { font-size: 11px; padding: 6px 14px; bottom: 14px; }
+  .bot-content  { padding: 16px 14px 12px; }
+  .bot-message  { font-size: 13px; line-height: 1.85; }
+
+  /* ── 遺物展示ケース ──────────────────────────────────── */
+  #artifact-showcase {
+    left: 8px;
+    top: auto;
+    bottom: 72px;
+    transform: none;
+    width: 128px;
+  }
+  #artifact-canvas-wrap,
+  #artifact-canvas { width: 128px; height: 128px; }
+  #artifact-body   { max-height: 380px; }
+
+  /* ── 巻物エントリーオーバーレイ ─────────────────────── */
+  #scroll-inner {
+    padding: 22px 18px 20px;
+    min-width: clamp(248px, 72vw, 420px);
+  }
+  #scroll-parchment.open { width: clamp(248px, 72vw, 420px); }
+  .scroll-rod { width: 18px; }
+  .scroll-rod::before,
+  .scroll-rod::after { width: 26px; height: 18px; }
+  #scroll-watermark { font-size: 4.5rem; }
+  #scroll-title { font-size: 1.1rem; }
+  /* 条文: 小さめフォント */
+  #scroll-terms dt { font-size: 0.78rem; }
+  #scroll-terms dd { font-size: 0.76rem; }
+  .agent7-warning p { font-size: 0.76rem; }
 }
 
 
