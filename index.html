@@ -18,6 +18,10 @@
   <!-- Three.js (遺物3D展示) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
+  <!-- Firebase SDK (compat モード — バンドル不要でそのまま使える) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
   <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
@@ -256,7 +260,11 @@
   </div>
 
 
-  <script src="js/app.js?v=13"></script>
+  <!-- Firebase 設定・データ層（app.js より先に読み込む） -->
+  <script src="js/firebase-config.js?v=1"></script>
+  <script src="js/db.js?v=1"></script>
+
+  <script src="js/app.js?v=14"></script>
   <script src="js/artifact.js?v=3"></script>
 </body>
 </html>

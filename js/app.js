@@ -1,15 +1,9 @@
 /* ============================================================
-   異常事象調査アーカイブ — app.js
+   異常事象調査アーカイブ — app.js  [Firestore 版]
    Frontend Logic: 地図 / マーカー / 投稿 / ボット / 追認
    ============================================================ */
 
 'use strict';
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ★ 設定欄
-   GAS をデプロイ後、発行された「ウェブアプリURL」をここに貼る
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzTMeOzoXjU2ArDwJ-HKpa8nNEou4bVyWhMCxxCGZI9fxL2E075vrBsWZTu8pU7nyuduA/exec';
 
 
 /* ── 事象種別マスター ───────────────────────────────────── */
@@ -39,9 +33,10 @@ const BOT_MESSAGES = [
 
 /* ── アプリ状態 ────────────────────────────────────────── */
 let map;
+let _fbReady      = false;   // Firestore 接続フラグ
 let pendingLatLng = null;
 let botMsgIndex   = Math.floor(Math.random() * BOT_MESSAGES.length);
-let allEvents     = []; // { id, marker, data } のキャッシュ
+let allEvents     = [];       // { id, marker, data } のキャッシュ
 let toastTimer    = null;
 
 
@@ -55,7 +50,6 @@ function initMap() {
     zoomControl: false,
   });
 
-  // CartoDB Positron（明るいベース）+ CSSセピアで古地図感を演出
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' +
@@ -64,60 +58,53 @@ function initMap() {
     maxZoom: 19,
   }).addTo(map);
 
-  // ズームコントロール（右下）
   L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-  // 地図クリック → 投稿モーダル表示
   map.on('click', onMapClick);
-
-  // ※ 調査員は固定HTML要素として配置（Leafletマーカーではない）
 }
 
 
 /* ══════════════════════════════════════════════════════════
-   調査員は index.html の #investigator-fixed（固定HTML要素）
-   DOMContentLoaded 内でクリックイベントを登録する
+   Firestore からイベントデータ取得（リトライ付き）
 ══════════════════════════════════════════════════════════ */
+async function loadEvents(retry = 0) {
+  setStatus('アーカイブ照合中…');
 
-
-/* ══════════════════════════════════════════════════════════
-   イベントデータ取得（GET ?action=list）
-══════════════════════════════════════════════════════════ */
-async function loadEvents() {
-  setStatus('照合中…');
-
-  // URLが未設定なら警告のみ
-  if (GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE') {
+  if (!_fbReady) {
     setStatus('未接続');
-    showToast('⚠ js/app.js の GAS_URL にデプロイ後のURLを設定してください', 'warn');
+    showToast('⚠ firebase-config.js の設定値を確認してください', 'warn');
     buildLegend();
     return;
   }
 
   try {
-    const res = await fetch(`${GAS_URL}?action=list`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const pins = await dbGetMapPins();
 
-    const json = await res.json();
-    if (json.status !== 'ok') throw new Error(json.message || 'データ取得失敗');
-
-    // 既存マーカーをリセット
+    /* 既存マーカーをリセット */
     allEvents.forEach(({ marker }) => map.removeLayer(marker));
     allEvents = [];
 
-    json.events.forEach(ev => {
-      if (!isNaN(ev.lat) && !isNaN(ev.lng)) {
-        addEventMarker(ev);
+    pins.forEach(pin => {
+      if (!isNaN(pin.lat) && !isNaN(pin.lng)) {
+        addEventMarker(pin);
       }
     });
 
-    setStatus(`記録数: ${json.events.length}件`);
-    updateRecentList(json.events);
+    setStatus(`記録数: ${pins.length}件`);
+    updateRecentList(pins);
     buildLegend();
 
   } catch (err) {
+    /* 指数バックオフで最大2回リトライ（1.5s → 3s） */
+    if (retry < 2) {
+      const delay = Math.pow(2, retry) * 1500;
+      console.warn(`[loadEvents] リトライ ${retry + 1}/2 — ${delay}ms後`, err);
+      setTimeout(() => loadEvents(retry + 1), delay);
+      return;
+    }
+
     setStatus('接続失敗');
-    showToast(`⚠ 取得エラー: ${err.message}`, 'error');
+    showToast(`⚠ アーカイブ取得失敗: ${err.message}`, 'error');
     console.error('[loadEvents]', err);
     buildLegend();
   }
@@ -140,7 +127,7 @@ function addEventMarker(ev) {
 
   const marker = L.marker([ev.lat, ev.lng], { icon }).addTo(map);
   marker.on('click', e => {
-    L.DomEvent.stopPropagation(e);   // 地図クリック（投稿モーダル）を防ぐ
+    L.DomEvent.stopPropagation(e);
     openEventPopup(ev);
   });
 
@@ -149,12 +136,15 @@ function addEventMarker(ev) {
 
 
 /* ══════════════════════════════════════════════════════════
-   事象ポップアップ（追認 + コメント機能）
-   ※ marker.bindPopup は使わず openOn(map) で何度でも開けるようにする
+   事象ポップアップ（追認 + コメント）
+   ※ bindPopup は使わず openOn(map) で何度でも開閉可能
 ══════════════════════════════════════════════════════════ */
 function openEventPopup(ev) {
   const tc     = getTypeConfig(ev.type);
   const relBar = buildRelBar(ev.reliability);
+
+  /* Firestore の doc ID は文字列 → onclick 内でシングルクォートで囲む */
+  const safeId = escHtml(ev.id);
 
   const html = `
     <div class="popup-content">
@@ -165,84 +155,81 @@ function openEventPopup(ev) {
       <p class="popup-text">${escHtml(ev.content)}</p>
       <div class="popup-footer">
         <span class="popup-reliability">${relBar}</span>
-        <button class="btn-endorse" id="endorse-${ev.id}"
-          onclick="window.endorseEvent(${ev.id}, this)">
+        <button class="btn-endorse" id="endorse-${safeId}"
+          onclick="window.endorseEvent('${safeId}', this)">
           ＋ 追認
         </button>
       </div>
 
       <div class="popup-comments-section">
         <div class="popup-comments-heading">— 調査コメント —</div>
-        <div id="pcl-${ev.id}" class="popup-comment-list">
+        <div id="pcl-${safeId}" class="popup-comment-list">
           <span class="popup-comment-dim">照合中…</span>
         </div>
         <div class="popup-comment-form">
-          <textarea id="pci-${ev.id}" class="popup-comment-input"
+          <textarea id="pci-${safeId}" class="popup-comment-input"
             placeholder="コメントを記録せよ"></textarea>
           <button class="popup-comment-btn"
-            onclick="window.submitComment(${ev.id}, this)">記録</button>
+            onclick="window.submitComment('${safeId}', this)">記録</button>
         </div>
       </div>
     </div>
   `;
 
-  // マーカーに bind しない → 何度でも開閉可能
   L.popup({ className: 'custom-popup-wrap', maxWidth: 380, minWidth: 260 })
     .setLatLng([ev.lat, ev.lng])
     .setContent(html)
     .openOn(map);
 
-  // DOM 生成後にコメントを非同期取得
+  /* DOM 生成後にコメントを非同期取得 */
   setTimeout(() => loadComments(ev.id), 80);
 }
 
 /* 信頼度バー（10マス） */
 function buildRelBar(n) {
-  const filled = Math.min(n, 10);
-  const empty  = Math.max(0, 10 - filled);
+  const filled = Math.min(Math.max(0, Number(n)), 10);
+  const empty  = 10 - filled;
   return `<span title="信頼度スコア: ${n}">` +
          `${'▮'.repeat(filled)}${'▯'.repeat(empty)}</span> (${n})`;
 }
 
 
 /* ══════════════════════════════════════════════════════════
-   コメント読み込み（GET ?action=comments&id=N）
+   コメント読み込み（Firestore サブコレクション）
 ══════════════════════════════════════════════════════════ */
-async function loadComments(eventId) {
-  const listEl = document.getElementById(`pcl-${eventId}`);
+async function loadComments(pinId) {
+  const listEl = document.getElementById(`pcl-${pinId}`);
   if (!listEl) return;
 
   try {
-    const res  = await fetch(`${GAS_URL}?action=comments&id=${eventId}`);
-    const json = await res.json();
-    if (json.status !== 'ok') throw new Error(json.message);
+    const comments = await dbGetComments(pinId);
 
-    if (!json.comments || json.comments.length === 0) {
+    if (!comments || comments.length === 0) {
       listEl.innerHTML = '<span class="popup-comment-dim">記録なし</span>';
     } else {
-      listEl.innerHTML = json.comments.map(c => `
+      listEl.innerHTML = comments.map(c => `
         <div class="popup-comment-item">
           <span class="popup-comment-time">${escHtml(c.datetime)}</span>
           <p class="popup-comment-text">${escHtml(c.comment)}</p>
         </div>
       `).join('');
+      /* 最新コメントへスクロール */
+      listEl.scrollTop = listEl.scrollHeight;
     }
 
-  } catch (_) {
-    if (document.getElementById(`pcl-${eventId}`)) {
-      document.getElementById(`pcl-${eventId}`).innerHTML =
-        '<span class="popup-comment-dim">読込失敗</span>';
-    }
+  } catch (err) {
+    console.error('[loadComments]', err);
+    const el = document.getElementById(`pcl-${pinId}`);
+    if (el) el.innerHTML = '<span class="popup-comment-dim">読込失敗</span>';
   }
 }
 
 
 /* ══════════════════════════════════════════════════════════
-   コメント送信（POST action=addComment）
-   グローバルに公開 → ポップアップ内のインラインonclickから呼ぶ
+   コメント送信（グローバル公開 → ポップアップ内 onclick から呼ぶ）
 ══════════════════════════════════════════════════════════ */
-window.submitComment = async function(eventId, btn) {
-  const input = document.getElementById(`pci-${eventId}`);
+window.submitComment = async function (pinId, btn) {
+  const input = document.getElementById(`pci-${pinId}`);
   if (!input) return;
 
   const comment = input.value.trim();
@@ -255,19 +242,14 @@ window.submitComment = async function(eventId, btn) {
   btn.textContent = '記録中…';
 
   try {
-    const body = new URLSearchParams();
-    body.append('data', JSON.stringify({ action: 'addComment', eventId, comment }));
-
-    const res  = await fetch(GAS_URL, { method: 'POST', body });
-    const json = await res.json();
-    if (json.status !== 'ok') throw new Error(json.message || '送信失敗');
-
+    await dbAddComment(pinId, comment);
     input.value = '';
     showToast('✓ コメントを記録した', 'success');
-    loadComments(eventId);   // 一覧をリロード
+    loadComments(pinId);
 
   } catch (err) {
     showToast(`⚠ 記録失敗: ${err.message}`, 'error');
+    console.error('[submitComment]', err);
   } finally {
     btn.disabled    = false;
     btn.textContent = '記録';
@@ -276,29 +258,26 @@ window.submitComment = async function(eventId, btn) {
 
 
 /* ══════════════════════════════════════════════════════════
-   追認（GET ?action=endorse&id=N）
-   グローバルに公開 → ポップアップ内のインラインonclickから呼ぶ
+   追認（グローバル公開 → ポップアップ内 onclick から呼ぶ）
 ══════════════════════════════════════════════════════════ */
-window.endorseEvent = async function(id, btn) {
+window.endorseEvent = async function (pinId, btn) {
   btn.disabled    = true;
   btn.textContent = '…';
 
   try {
-    const res  = await fetch(`${GAS_URL}?action=endorse&id=${id}`);
-    const json = await res.json();
-    if (json.status !== 'ok') throw new Error(json.message);
-
-    btn.textContent = `✓ ${json.reliability}`;
+    const newRel = await dbEndorsePin(pinId);
+    btn.textContent = `✓ ${newRel}`;
     showToast('追認を記録した', 'success');
 
-    // ローカルキャッシュ更新
-    const entry = allEvents.find(e => e.id === id);
-    if (entry) entry.data.reliability = json.reliability;
+    /* ローカルキャッシュ更新 */
+    const entry = allEvents.find(e => e.id === pinId);
+    if (entry) entry.data.reliability = newRel;
 
   } catch (err) {
     btn.disabled    = false;
     btn.textContent = '＋ 追認';
     showToast(`⚠ 追認失敗: ${err.message}`, 'error');
+    console.error('[endorseEvent]', err);
   }
 };
 
@@ -317,7 +296,7 @@ function onMapClick(e) {
 
 
 /* ══════════════════════════════════════════════════════════
-   投稿送信（POST with URLSearchParams → CORS プリフライト不要）
+   投稿送信（Firestore addDoc）
 ══════════════════════════════════════════════════════════ */
 async function submitPost() {
   if (!pendingLatLng) return;
@@ -336,31 +315,24 @@ async function submitPost() {
   submitBtn.textContent = '記録中…';
 
   try {
-    const payload  = {
-      lat    : pendingLatLng.lat,
-      lng    : pendingLatLng.lng,
-      content: content,
-      type   : type,
-    };
+    const docId = await dbAddMapPin(
+      pendingLatLng.lat,
+      pendingLatLng.lng,
+      content,
+      type
+    );
 
-    // URLSearchParams でエンコード → application/x-www-form-urlencoded
-    // → CORSプリフライトを回避できる GAS 推奨の送信方法
-    const body = new URLSearchParams();
-    body.append('data', JSON.stringify(payload));
-
-    const res  = await fetch(GAS_URL, { method: 'POST', body });
-    const json = await res.json();
-    if (json.status !== 'ok') throw new Error(json.message || '保存失敗');
-
-    // 投稿したマーカーを即時表示
+    /* 投稿成功 → 即時マーカーを追加 */
+    const now = new Date().toLocaleString('ja-JP', { hour12: false });
     const newEv = {
-      id          : json.id || (allEvents.length + 1),
+      id          : docId,
       lat         : pendingLatLng.lat,
       lng         : pendingLatLng.lng,
       content,
       type,
       reliability : 0,
-      datetime    : new Date().toLocaleString('ja-JP', { hour12: false }),
+      datetime    : now,
+      _clientTime : Date.now(),   // ローカルソート用
     };
     addEventMarker(newEv);
     updateRecentList(allEvents.map(e => e.data));
@@ -368,8 +340,6 @@ async function submitPost() {
     hideModal('post-modal');
     showToast('✓ 事象を記録した', 'success');
     pendingLatLng = null;
-
-    // ステータス更新
     setStatus(`記録数: ${allEvents.length}件`);
 
   } catch (err) {
@@ -417,7 +387,14 @@ function updateRecentList(events) {
     return;
   }
 
-  const recent = [...events].sort((a, b) => b.id - a.id).slice(0, 10);
+  /* timestamp（Firestore）→ _clientTime（即時投稿）→ 0 の優先順でソート */
+  const sorted = [...events].sort((a, b) => {
+    const ta = a.timestamp?.toMillis?.() ?? a._clientTime ?? 0;
+    const tb = b.timestamp?.toMillis?.() ?? b._clientTime ?? 0;
+    return tb - ta;
+  });
+
+  const recent = sorted.slice(0, 10);
   container.innerHTML = recent.map(ev => {
     const tc   = getTypeConfig(ev.type);
     const text = ev.content.length > 26
@@ -465,7 +442,8 @@ function escHtml(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function getTypeConfig(typeName) {
@@ -511,10 +489,7 @@ function initEntryOverlay() {
     if (terms.classList.contains('expanded')) return;
     terms.classList.add('expanded');
     hint.classList.add('hint-collapse');
-    /* 条文が開いてからボタンを表示 */
-    setTimeout(() => {
-      entryBtn.classList.add('visible');
-    }, 500);
+    setTimeout(() => entryBtn.classList.add('visible'), 500);
   }
 
   title.addEventListener('click', expandTerms);
@@ -523,12 +498,10 @@ function initEntryOverlay() {
   /* 入室ボタン → オーバーレイをフェードアウトして消す */
   entryBtn.addEventListener('click', () => {
     overlay.classList.add('fade-out');
-    setTimeout(() => {
-      overlay.classList.add('hidden');
-    }, 820);
+    setTimeout(() => overlay.classList.add('hidden'), 820);
   });
 
-  /* フッター「利用規約」→ 条文展開状態でオーバーレイを再表示 */
+  /* フッター「利用規約」→ 条文展開状態で再表示 */
   termsBtn.addEventListener('click', () => {
     overlay.classList.remove('hidden', 'fade-out');
     overlay.style.opacity = '';
@@ -543,18 +516,9 @@ function initEntryOverlay() {
 
 /* ══════════════════════════════════════════════════════════
    [将来] AI 対話インターフェース スタブ
-   OpenAI API / GAS経由で AGENT-7 を対話可能にする場合はここに実装
+   Claude API / Anthropic SDK で AGENT-7 を対話可能にする場合はここに実装
    ──────────────────────────────────────────────────────
-   async function askAgent(userMessage) {
-     const res = await fetch(GAS_URL, {
-       method: 'POST',
-       body: new URLSearchParams({
-         data: JSON.stringify({ action: 'ai_chat', message: userMessage })
-       })
-     });
-     const json = await res.json();
-     return json.reply || '……（通信不良）';
-   }
+   async function askAgent(userMessage) { ... }
 ══════════════════════════════════════════════════════════ */
 
 
@@ -562,6 +526,9 @@ function initEntryOverlay() {
    DOMContentLoaded — 起動処理
 ══════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
+
+  /* ── Firebase / Firestore 初期化 ─────────────────────── */
+  _fbReady = initFirebaseDB();
 
   /* ── 入室オーバーレイ ───────────────────────────────── */
   initEntryOverlay();
@@ -585,7 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('char-counter').textContent = this.value.length;
   });
 
-  /* ── 調査員 固定ボタン ──────────────────────────────────── */
+  /* ── 調査員 固定ボタン ──────────────────────────────── */
   const investigator = document.getElementById('investigator-fixed');
   investigator.addEventListener('click', showBotDialog);
   investigator.addEventListener('keydown', e => {
@@ -631,18 +598,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   toggle.addEventListener('click', () => {
     if (isMobileView()) {
-      /* ── モバイル: open クラスでスライドイン/アウト ── */
       const willOpen = !panel.classList.contains('open');
       panel.classList.toggle('open', willOpen);
       document.body.classList.toggle('sp-open', willOpen);
     } else {
-      /* ── デスクトップ: collapsed クラスで部分隠し ──── */
       panel.classList.toggle('collapsed');
     }
     syncToggleLabel();
   });
 
-  /* 画面サイズ変化時にクラスをリセット */
   window.addEventListener('resize', () => {
     if (!isMobileView()) {
       panel.classList.remove('open');

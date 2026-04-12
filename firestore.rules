@@ -1,0 +1,81 @@
+// ============================================================
+//  異常事象調査アーカイブ — Firestore セキュリティルール
+//
+//  【デプロイ方法】
+//  $ firebase init firestore   (初回のみ)
+//  $ firebase deploy --only firestore:rules
+//
+//  または Firebase コンソール → Firestore Database
+//  → [ルール] タブに以下を貼り付けて [公開] をクリック
+// ============================================================
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── map_pins コレクション ───────────────────────────────
+    match /map_pins/{pinId} {
+
+      // 読み取り: 誰でも可
+      allow read: if true;
+
+      // 新規作成: 必須フィールド + 型 + 文字数バリデーション
+      allow create: if
+        request.resource.data.keys().hasAll(
+          ['lat','lng','content','type','reliability','datetime','timestamp']
+        )
+        && request.resource.data.lat  is number
+        && request.resource.data.lng  is number
+        && request.resource.data.content is string
+        && request.resource.data.content.size() > 0
+        && request.resource.data.content.size() <= 500
+        && request.resource.data.reliability == 0;
+
+      // 更新: reliability フィールドの増加のみ許可（追認操作）
+      allow update: if
+        request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly(['reliability'])
+        && request.resource.data.reliability ==
+           resource.data.reliability + 1;
+
+      // 削除: 禁止（管理者が Firebase コンソールから行う）
+      allow delete: if false;
+
+
+      // ── comments サブコレクション ───────────────────────
+      match /comments/{commentId} {
+
+        allow read: if true;
+
+        allow create: if
+          request.resource.data.keys().hasAll(
+            ['comment','datetime','timestamp']
+          )
+          && request.resource.data.comment is string
+          && request.resource.data.comment.size() > 0;
+
+        allow update, delete: if false;
+      }
+    }
+
+
+    // ── forum_topics コレクション（将来の考察ページ用） ────
+    match /forum_topics/{topicId} {
+
+      allow read: if true;
+
+      allow create: if
+        request.resource.data.keys().hasAll(
+          ['title','category','content','author','createdAt']
+        )
+        && request.resource.data.title    is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.category is string
+        && request.resource.data.content  is string
+        && request.resource.data.content.size() > 0;
+
+      allow update, delete: if false;
+    }
+
+  }
+}
