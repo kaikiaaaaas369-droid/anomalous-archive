@@ -14,10 +14,10 @@
    ============================================================ */
 
 const FIREBASE_CONFIG = {
-  apiKey           : 'YOUR_API_KEY',
-  authDomain       : 'YOUR_PROJECT_ID.firebaseapp.com',
-  projectId        : 'YOUR_PROJECT_ID',
-  storageBucket    : 'YOUR_PROJECT_ID.firebasestorage.app',
-  messagingSenderId: 'YOUR_SENDER_ID',
-  appId            : 'YOUR_APP_ID',
+  apiKey: "AIzaSyDPBtRxtf3gAjw_ZXxdjhK4-OLHOTCO78Y",
+  authDomain: "anomaly-gatekeeper.firebaseapp.com",
+  projectId: "anomaly-gatekeeper",
+  storageBucket: "anomaly-gatekeeper.firebasestorage.app",
+  messagingSenderId: "34365516317",
+  appId: "1:34365516317:web:2f7579a391adf4dad4b4f4",
 };
