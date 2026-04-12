@@ -617,13 +617,40 @@ document.addEventListener('DOMContentLoaded', () => {
   const panel  = document.getElementById('side-panel');
   const toggle = document.getElementById('panel-toggle');
 
+  function isMobileView() {
+    return window.matchMedia('(max-width: 640px)').matches;
+  }
+
+  function syncToggleLabel() {
+    const isOpen = isMobileView()
+      ? panel.classList.contains('open')
+      : !panel.classList.contains('collapsed');
+    toggle.textContent = isOpen ? '◀' : '▶';
+    toggle.setAttribute('aria-label', isOpen ? 'パネルを閉じる' : 'パネルを開く');
+  }
+
   toggle.addEventListener('click', () => {
-    panel.classList.toggle('collapsed');
-    toggle.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
-    toggle.setAttribute(
-      'aria-label',
-      panel.classList.contains('collapsed') ? 'パネルを開く' : 'パネルを閉じる'
-    );
+    if (isMobileView()) {
+      /* ── モバイル: open クラスでスライドイン/アウト ── */
+      const willOpen = !panel.classList.contains('open');
+      panel.classList.toggle('open', willOpen);
+      document.body.classList.toggle('sp-open', willOpen);
+    } else {
+      /* ── デスクトップ: collapsed クラスで部分隠し ──── */
+      panel.classList.toggle('collapsed');
+    }
+    syncToggleLabel();
+  });
+
+  /* 画面サイズ変化時にクラスをリセット */
+  window.addEventListener('resize', () => {
+    if (!isMobileView()) {
+      panel.classList.remove('open');
+      document.body.classList.remove('sp-open');
+    } else {
+      panel.classList.remove('collapsed');
+    }
+    syncToggleLabel();
   });
 
   /* ── キーボード: Escape でモーダルを閉じる ─────────── */
