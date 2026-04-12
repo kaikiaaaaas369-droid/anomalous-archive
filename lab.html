@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>研究室 — 異常事象調査アーカイブ</title>
+  <meta name="description" content="AGENT-7 の研究室。考察・未解決事件・都市伝説の議論の場。">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Three.js（デスク上の3D遺物） -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <link rel="stylesheet" href="css/lab.css?v=1">
+</head>
+<body>
+
+  <!-- ████████ 廊下 → ドア 移行演出 ████████ -->
+  <div id="lab-transition" aria-hidden="true">
+
+    <!-- 廊下シーン（黒画面 + 奥行き感） -->
+    <div id="corridor">
+      <div class="corridor-frame f1"></div>
+      <div class="corridor-frame f2"></div>
+      <div class="corridor-frame f3"></div>
+      <div class="corridor-frame f4"></div>
+      <div id="corridor-label">
+        <span class="c-dash">——</span>
+        SECTION-7&emsp;研究室
+        <span class="c-dash">——</span>
+      </div>
+      <div id="corridor-floor-line"></div>
+    </div>
+
+    <!-- ドアパネル（左右に割れる） -->
+    <div id="door-panel-l" class="door-panel">
+      <div class="door-grain"></div>
+      <div class="door-molding top"></div>
+      <div class="door-molding bottom"></div>
+    </div>
+    <div id="door-panel-r" class="door-panel">
+      <div class="door-grain"></div>
+      <div class="door-molding top"></div>
+      <div class="door-molding bottom"></div>
+      <div class="door-knob"></div>
+    </div>
+
+    <!-- ドア開放フラッシュ -->
+    <div id="door-flash"></div>
+
+  </div><!-- /#lab-transition -->
+
+
+  <!-- ████████ 研究室シーン ████████ -->
+  <div id="lab-scene" role="main" aria-label="研究室">
+
+    <!-- ライティングレイヤー -->
+    <div id="lamp-cone"     aria-hidden="true"></div>
+    <div id="ashtray-glow" aria-hidden="true"></div>
+    <div id="lab-vignette"  aria-hidden="true"></div>
+
+    <!-- ヘッダー -->
+    <header id="lab-header">
+      <div class="lab-header-left">
+        <span class="lab-sigil" aria-hidden="true">⚗</span>
+        <span class="lab-header-title">SECTION-7&ensp;—&ensp;研究室</span>
+      </div>
+      <a href="index.html" id="back-to-map" title="地図へ戻る">← 地図に戻る</a>
+    </header>
+
+
+    <!-- ████████ デスク ████████ -->
+    <div id="desk" aria-label="調査デスク">
+
+      <!-- ① 左奥：飲みかけのコーヒーカップ -->
+      <div id="coffee-area" class="desk-obj" aria-label="コーヒーカップ">
+        <div class="coffee-wrap">
+          <div class="cup-saucer">
+            <div class="cup-body">
+              <div class="cup-coffee-surface"></div>
+              <div class="cup-reflection"></div>
+            </div>
+            <div class="cup-handle"></div>
+          </div>
+          <div class="cup-ring-stain s1"></div>
+          <div class="cup-ring-stain s2"></div>
+        </div>
+        <p class="obj-label">飲みかけのコーヒー</p>
+      </div>
+
+      <!-- ② 右奥：羽根ペン + インク瓶 -->
+      <div id="pen-area" class="desk-obj" aria-label="ペン立て">
+        <div class="pen-wrap">
+          <div class="ink-bottle">
+            <div class="ink-neck"></div>
+            <div class="ink-body">
+              <div class="ink-liquid"></div>
+            </div>
+          </div>
+          <div class="quill">
+            <div class="quill-barb left"></div>
+            <div class="quill-shaft"></div>
+            <div class="quill-barb right"></div>
+          </div>
+        </div>
+        <p class="obj-label">羽根ペン / インク瓶</p>
+      </div>
+
+      <!-- ③ Center-Top：3D 遺物（封印容器） -->
+      <div id="lab-artifact-wrap" aria-label="遺物-Ω03">
+        <canvas id="lab-3d-canvas" aria-label="3D遺物 封印容器"></canvas>
+        <p class="artifact-sub">遺物-Ω03：封印容器</p>
+        <div class="artifact-shadow"></div>
+      </div>
+
+      <!-- ④ 中央：散乱した書類（4種） -->
+      <div id="documents" aria-label="調査書類">
+
+        <!-- 未解決事件 -->
+        <div class="doc-paper" data-cat="未解決事件"
+             tabindex="0" role="button" aria-label="未解決事件 調査記録を開く">
+          <span class="doc-stamp">機密</span>
+          <h3 class="doc-title">未解決事件<br>調査記録</h3>
+          <div class="doc-ruled">
+            <span class="doc-line"></span><span class="doc-line"></span>
+            <span class="doc-line short"></span><span class="doc-line"></span>
+            <span class="doc-line short"></span><span class="doc-line"></span>
+          </div>
+          <p class="doc-excerpt">未だ解明されていない事件の記録と、調査員たちによる考察を集積した文書群。</p>
+          <span class="doc-handnote">閲覧制限: 一般調査員以上</span>
+        </div>
+
+        <!-- 都市伝説 -->
+        <div class="doc-paper" data-cat="都市伝説"
+             tabindex="0" role="button" aria-label="都市伝説 調査記録を開く">
+          <span class="doc-stamp">要注意</span>
+          <h3 class="doc-title">都市伝説<br>事象記録</h3>
+          <div class="doc-ruled">
+            <span class="doc-line"></span><span class="doc-line"></span>
+            <span class="doc-line short"></span><span class="doc-line"></span>
+            <span class="doc-line"></span>
+          </div>
+          <p class="doc-excerpt">口伝で広がる異常事象の記録。地図データとの照合・信頼度検証が課題とされる。</p>
+          <span class="doc-handnote">— 宇都宮支部 収集 —</span>
+        </div>
+
+        <!-- 神話（コーヒーの輪染み あり） -->
+        <div class="doc-paper has-ring" data-cat="神話"
+             tabindex="0" role="button" aria-label="神話 調査記録を開く">
+          <span class="doc-stamp">古代</span>
+          <h3 class="doc-title">神話・古伝承<br>解読記録</h3>
+          <div class="doc-ruled">
+            <span class="doc-line"></span><span class="doc-line short"></span>
+            <span class="doc-line"></span><span class="doc-line"></span>
+            <span class="doc-line short"></span>
+          </div>
+          <p class="doc-excerpt">古事記・風土記・地方伝承との照合。現代の異常事象との類似点を精査する。</p>
+          <span class="doc-handnote">解読率: 約 38%</span>
+        </div>
+
+        <!-- 失われた言語 -->
+        <div class="doc-paper" data-cat="失われた言語"
+             tabindex="0" role="button" aria-label="失われた言語 調査記録を開く">
+          <span class="doc-stamp">解読中</span>
+          <h3 class="doc-title">失われた言語<br>解析資料</h3>
+          <div class="doc-ruled">
+            <span class="doc-line"></span><span class="doc-line"></span>
+            <span class="doc-line"></span><span class="doc-line short"></span>
+            <span class="doc-line"></span>
+          </div>
+          <p class="doc-excerpt">複数の事象現場で発見された未解読文字群の解析資料。</p>
+          <span class="doc-handnote">文字種: 未同定</span>
+        </div>
+
+      </div><!-- /#documents -->
+
+      <!-- ⑤ 右手前：灰皿（煙パーティクル） -->
+      <div id="ashtray-wrap" aria-label="灰皿">
+        <canvas id="smoke-canvas" aria-hidden="true"></canvas>
+        <div id="ashtray">
+          <div class="cig-stub s1"></div>
+          <div class="cig-stub s2"></div>
+          <div class="cig-stub s3"></div>
+          <div class="ash-center"></div>
+        </div>
+        <p class="obj-label">灰皿</p>
+      </div>
+
+    </div><!-- /#desk -->
+
+
+    <!-- 考察トピックモーダル -->
+    <div id="topic-modal" class="modal-overlay hidden"
+         role="dialog" aria-modal="true" aria-labelledby="topic-modal-title">
+      <div class="topic-modal-box">
+        <div class="topic-modal-header">
+          <h2 id="topic-modal-title" class="topic-cat-label"></h2>
+          <button id="topic-modal-close" class="topic-close-btn" aria-label="閉じる">✕</button>
+        </div>
+        <div class="topic-modal-body">
+          <div id="topic-list" class="topic-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /#lab-scene -->
+
+
+  <script src="js/lab-audio.js?v=1"></script>
+  <script src="js/lab.js?v=1"></script>
+</body>
+</html>

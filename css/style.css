@@ -661,6 +661,52 @@ body::before {
   letter-spacing: 0.06em;
   margin-top: 10px;
 }
+
+/* ── 研究室ナビゲーションボタン ──────────────────────────── */
+.btn-lab-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 12px;
+  text-decoration: none;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--col-parchment-dim);
+  background: transparent;
+  border: 1px solid var(--col-border-bright);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: color 0.3s, border-color 0.3s, background 0.3s, box-shadow 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-lab-entry::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(200,134,10,0.10) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.btn-lab-entry:hover {
+  color: var(--col-parchment-bright);
+  border-color: var(--col-amber);
+  box-shadow: 0 0 12px rgba(200, 134, 10, 0.18);
+}
+.btn-lab-entry:hover::before { opacity: 1; }
+.lab-entry-icon {
+  font-size: 13px;
+  opacity: 0.7;
+  animation: lab-icon-pulse 3.5s ease-in-out infinite;
+}
+@keyframes lab-icon-pulse {
+  0%, 100% { opacity: 0.7; }
+  50%       { opacity: 1.0; transform: scale(1.1); }
+}
 .ai-dot {
   width: 7px; height: 7px;
   border-radius: 50%;

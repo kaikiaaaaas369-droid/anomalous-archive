@@ -1,0 +1,929 @@
+/* ============================================================
+   異常事象調査アーカイブ — lab.css
+   研究室（LABORATORY）専用スタイル
+   ============================================================ */
+
+/* ── CSS 変数（プロジェクト共通パレット継承） ───────────── */
+:root {
+  --desk-surface:   #1e1008;
+  --desk-edge:      #5a3a1a;
+  --desk-grain:     rgba(60, 35, 10, 0.13);
+  --parchment:      #e0cfa8;
+  --parchment-dark: #c8b280;
+  --ink-dark:       #2a1808;
+  --ink-mid:        #4a3020;
+  --amber:          #c8860a;
+  --amber-dim:      rgba(200, 134, 10, 0.5);
+  --warm-light:     rgba(255, 210, 100, 0.11);
+  --text-faded:     rgba(200, 174, 130, 0.55);
+  --bg-void:        #060402;
+}
+
+/* ── リセット ──────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg-void);
+  font-family: 'Noto Serif JP', serif;
+  color: var(--parchment);
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   廊下 → ドア 移行演出
+══════════════════════════════════════════════════════════ */
+#lab-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+}
+
+/* ── 廊下（奥行き感） ─── */
+#corridor {
+  position: absolute;
+  inset: 0;
+  background: #020100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  transition: opacity 0.5s ease;
+}
+#corridor.fade-out { opacity: 0; }
+
+.corridor-frame {
+  position: absolute;
+  border: 1px solid rgba(80, 50, 20, 0.22);
+  border-radius: 2px;
+  transition: opacity 0.6s;
+}
+.corridor-frame.f1 { inset: 5%;  opacity: 0.30; }
+.corridor-frame.f2 { inset: 18%; opacity: 0.22; }
+.corridor-frame.f3 { inset: 31%; opacity: 0.16; }
+.corridor-frame.f4 { inset: 42%; opacity: 0.10; border-color: rgba(120,80,30,0.3); }
+
+#corridor-label {
+  position: relative;
+  font-size: 11px;
+  letter-spacing: 0.5em;
+  color: rgba(200, 174, 130, 0);
+  text-transform: uppercase;
+  transition: color 0.8s ease 0.4s;
+}
+#corridor-label.visible { color: rgba(200, 174, 130, 0.30); }
+.c-dash { letter-spacing: 0.1em; opacity: 0.5; }
+
+#corridor-floor-line {
+  position: absolute;
+  bottom: 30%;
+  left: 50%; right: 50%;
+  height: 1px;
+  background: rgba(100, 65, 25, 0.18);
+  transition: left 1.2s ease 0.2s, right 1.2s ease 0.2s;
+}
+#corridor-floor-line.spread { left: 12%; right: 12%; }
+
+/* ── ドアパネル ─── */
+.door-panel {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 50.5%;
+  background: linear-gradient(
+    175deg,
+    #1a0e06 0%, #2a1a0a 30%, #1a0e06 60%, #120a04 100%
+  );
+  transition: transform 1.5s cubic-bezier(0.76, 0, 0.24, 1);
+  z-index: 10;
+  overflow: hidden;
+}
+#door-panel-l { left: 0; transform-origin: left center; }
+#door-panel-r { right: 0; transform-origin: right center; }
+
+/* ドアが開いた状態 */
+#lab-transition.door-open #door-panel-l { transform: translateX(-102%); }
+#lab-transition.door-open #door-panel-r { transform: translateX(102%); }
+
+/* 木目テクスチャ */
+.door-grain {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    80deg,
+    transparent,
+    transparent 38px,
+    var(--desk-grain) 38px,
+    var(--desk-grain) 40px
+  );
+  opacity: 0.7;
+}
+
+/* 鏡板（装飾枠） */
+.door-molding {
+  position: absolute;
+  left: 10%; right: 10%;
+  height: 28%;
+  border: 2px solid rgba(90, 55, 20, 0.35);
+  border-radius: 2px;
+}
+.door-molding.top    { top: 9%;    }
+.door-molding.bottom { bottom: 9%; }
+
+/* ドアノブ */
+.door-knob {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d4a040, #8a5810);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+.door-knob::after {
+  content: '';
+  position: absolute;
+  left: -6px; top: 50%;
+  transform: translateY(-50%);
+  width: 6px; height: 3px;
+  background: #7a4a10;
+  border-radius: 1px;
+}
+
+/* ドア開放フラッシュ */
+#door-flash {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 240, 200, 0);
+  pointer-events: none;
+  z-index: 20;
+  transition: background 0.08s ease;
+}
+#door-flash.burst { background: rgba(255, 240, 200, 0.18); }
+
+
+/* ══════════════════════════════════════════════════════════
+   研究室シーン
+══════════════════════════════════════════════════════════ */
+#lab-scene {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.0s ease;
+  pointer-events: none;
+}
+#lab-scene.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+
+/* ── ライティングレイヤー ──────────────────────────────── */
+
+/* デスクランプの光錐（中央上から拡散） */
+#lamp-cone {
+  position: absolute;
+  left: 50%;
+  top: -8%;
+  transform: translateX(-50%);
+  width: clamp(700px, 80vw, 1100px);
+  height: 85vh;
+  background: radial-gradient(
+    ellipse 55% 72% at 50% 0%,
+    rgba(255, 200, 80, 0.13) 0%,
+    rgba(255, 180, 60, 0.06) 45%,
+    transparent 72%
+  );
+  pointer-events: none;
+  animation: lamp-flicker 9s ease-in-out infinite;
+  z-index: 5;
+}
+@keyframes lamp-flicker {
+  0%, 100% { opacity: 1; }
+  88%       { opacity: 1; }
+  89%       { opacity: 0.82; }
+  90%       { opacity: 1; }
+  94%       { opacity: 0.90; }
+  95%       { opacity: 1; }
+}
+
+/* 灰皿の燃える煙草の仄かな光 */
+#ashtray-glow {
+  position: absolute;
+  right: 8%;
+  bottom: 15%;
+  width: 160px;
+  height: 100px;
+  background: radial-gradient(
+    ellipse at 50% 80%,
+    rgba(255, 120, 30, 0.07) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  animation: ember-pulse 3.8s ease-in-out infinite;
+  z-index: 5;
+}
+@keyframes ember-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%       { opacity: 1.0; transform: scale(1.08); }
+}
+
+/* 強いビネット（周辺減光） */
+#lab-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 75% 60% at 50% 52%,
+      transparent 0%,
+      rgba(4, 2, 1, 0.45) 52%,
+      rgba(4, 2, 1, 0.88) 78%,
+      rgba(4, 2, 1, 0.97) 100%
+    );
+  pointer-events: none;
+  z-index: 200;
+}
+
+
+/* ── ヘッダー ──────────────────────────────────────────── */
+#lab-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 22px;
+  background: linear-gradient(180deg, rgba(6, 4, 2, 0.90) 0%, transparent 100%);
+  z-index: 300;
+}
+.lab-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lab-sigil {
+  font-size: 16px;
+  color: var(--amber-dim);
+}
+.lab-header-title {
+  font-size: 10px;
+  letter-spacing: 0.35em;
+  color: var(--text-faded);
+  text-transform: uppercase;
+}
+#back-to-map {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-faded);
+  text-decoration: none;
+  border: 1px solid rgba(200, 174, 130, 0.20);
+  padding: 4px 14px;
+  border-radius: 1px;
+  transition: color 0.3s, border-color 0.3s, background 0.3s;
+}
+#back-to-map:hover {
+  color: var(--parchment);
+  border-color: var(--amber-dim);
+  background: rgba(200, 134, 10, 0.08);
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   デスク
+══════════════════════════════════════════════════════════ */
+#desk {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1160px, 100vw);
+  height: 78vh;
+  background: linear-gradient(
+    168deg,
+    #181006 0%,
+    #251508 28%,
+    #1e1107 62%,
+    #130b03 100%
+  );
+  border-top: 3px solid #5c3c1a;
+  border-radius: 10px 10px 0 0;
+  box-shadow:
+    0 -10px 48px rgba(0, 0, 0, 0.85),
+    inset 0 3px 0 rgba(130, 75, 22, 0.35),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.5);
+  overflow: visible;
+}
+
+/* 木目テクスチャ */
+#desk::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    83deg,
+    transparent,
+    transparent 26px,
+    var(--desk-grain) 26px,
+    var(--desk-grain) 28px
+  );
+  pointer-events: none;
+}
+
+/* デスク縁の反射光（仮想光沢） */
+#desk::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 5%,
+    rgba(200, 150, 60, 0.35) 30%,
+    rgba(220, 180, 80, 0.50) 50%,
+    rgba(200, 150, 60, 0.35) 70%,
+    transparent 95%
+  );
+  border-radius: 10px 10px 0 0;
+}
+
+/* ── 共通デスクオブジェクト ─── */
+.desk-obj {
+  position: absolute;
+  text-align: center;
+}
+.obj-label {
+  font-size: 8px;
+  color: var(--text-faded);
+  letter-spacing: 0.15em;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.desk-obj:hover .obj-label { opacity: 1; }
+
+
+/* ══════════════════════════════════════════════════════════
+   ① 左奥：コーヒーカップ
+══════════════════════════════════════════════════════════ */
+#coffee-area {
+  top: 5%;
+  left: 7%;
+  width: 80px;
+}
+
+.coffee-wrap { position: relative; display: inline-block; }
+
+.cup-saucer {
+  width: 72px;
+  height: 8px;
+  background: linear-gradient(180deg, #c8b498 0%, #8a7860 100%);
+  border-radius: 50%;
+  margin: 0 auto;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+  position: relative;
+}
+
+.cup-body {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 52px;
+  background: linear-gradient(155deg, #d4c4b0 0%, #a89878 45%, #8a7a66 100%);
+  border-radius: 3px 3px 7px 7px;
+  border: 1.5px solid rgba(80, 55, 30, 0.5);
+  overflow: hidden;
+}
+
+.cup-coffee-surface {
+  position: absolute;
+  top: 10px;
+  left: 4px; right: 4px;
+  height: 28px;
+  background: radial-gradient(ellipse, #3a1808 0%, #200a04 100%);
+  border-radius: 2px;
+}
+
+.cup-reflection {
+  position: absolute;
+  top: 12px;
+  left: 8px;
+  width: 6px;
+  height: 10px;
+  background: rgba(255, 200, 120, 0.12);
+  border-radius: 50%;
+  transform: rotate(-20deg);
+}
+
+.cup-handle {
+  position: absolute;
+  right: -12px;
+  bottom: 10px;
+  width: 13px;
+  height: 20px;
+  border: 2.5px solid #8a7866;
+  border-left: none;
+  border-radius: 0 7px 7px 0;
+}
+
+/* コーヒーの染み（2重リング） */
+.cup-ring-stain {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(40, 18, 5, 0.20);
+  pointer-events: none;
+}
+.cup-ring-stain.s1 {
+  width: 58px; height: 10px;
+  bottom: -5px; left: 50%;
+  transform: translateX(-50%);
+  border-color: rgba(40, 18, 5, 0.28);
+}
+.cup-ring-stain.s2 {
+  width: 70px; height: 12px;
+  bottom: -18px; left: 50%;
+  transform: translateX(-50%);
+  border-color: rgba(40, 18, 5, 0.14);
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   ② 右奥：羽根ペン + インク瓶
+══════════════════════════════════════════════════════════ */
+#pen-area {
+  top: 4%;
+  right: 6%;
+  width: 90px;
+}
+
+.pen-wrap {
+  position: relative;
+  width: 90px;
+  height: 90px;
+}
+
+/* インク瓶 */
+.ink-bottle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 38px;
+}
+.ink-neck {
+  width: 14px;
+  height: 12px;
+  background: linear-gradient(160deg, #1e2e50 0%, #0e1c38 100%);
+  border: 1.5px solid #2a3a5a;
+  border-radius: 3px 3px 0 0;
+  margin: 0 auto;
+}
+.ink-body {
+  width: 38px;
+  height: 42px;
+  background: linear-gradient(155deg, #1a2848 0%, #0e1830 65%, #080e20 100%);
+  border: 1.5px solid #2a3858;
+  border-radius: 3px 3px 5px 5px;
+  overflow: hidden;
+  position: relative;
+}
+.ink-liquid {
+  position: absolute;
+  bottom: 4px;
+  left: 3px; right: 3px;
+  height: 18px;
+  background: radial-gradient(ellipse, #304080 0%, #080e28 100%);
+  border-radius: 2px;
+  opacity: 0.85;
+}
+
+/* 羽根ペン */
+.quill {
+  position: absolute;
+  left: 4px;
+  bottom: 8px;
+  width: 48px;
+  height: 82px;
+  transform: rotate(-18deg);
+  transform-origin: bottom center;
+}
+.quill-shaft {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(235, 215, 175, 0.9) 0%,
+    rgba(200, 175, 125, 0.6) 65%,
+    rgba(160, 130, 80, 0.3) 100%
+  );
+  border-radius: 1.5px;
+}
+.quill-barb {
+  position: absolute;
+  top: 4px;
+  width: 22px;
+  height: 55px;
+  background: radial-gradient(
+    ellipse 60% 100% at 50% 20%,
+    rgba(240, 225, 190, 0.70) 0%,
+    rgba(210, 190, 155, 0.30) 60%,
+    transparent 100%
+  );
+  border-radius: 50% 10% 30% 50%;
+}
+.quill-barb.left  { right: 50%; transform: scaleX(-1) rotate(3deg); }
+.quill-barb.right { left:  50%; transform: rotate(-3deg); }
+
+
+/* ══════════════════════════════════════════════════════════
+   ③ Center-Top：3D 遺物
+══════════════════════════════════════════════════════════ */
+#lab-artifact-wrap {
+  position: absolute;
+  top: 4%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  text-align: center;
+}
+
+#lab-3d-canvas {
+  width: 130px;
+  height: 130px;
+  display: block;
+  margin: 0 auto;
+  cursor: pointer;
+}
+
+.artifact-sub {
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  color: var(--amber-dim);
+  margin-top: 4px;
+}
+
+.artifact-shadow {
+  width: 80px;
+  height: 8px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.55) 0%, transparent 70%);
+  margin: 2px auto 0;
+  border-radius: 50%;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   ④ 中央：散乱した書類
+══════════════════════════════════════════════════════════ */
+#documents {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 580px;
+  height: 390px;
+}
+
+.doc-paper {
+  position: absolute;
+  width: 204px;
+  min-height: 265px;
+  background: linear-gradient(
+    152deg,
+    #eadfc6 0%,
+    #d8c8a0 55%,
+    #ccb888 100%
+  );
+  border: 1px solid rgba(140, 100, 50, 0.5);
+  border-radius: 1px;
+  padding: 18px 15px 14px;
+  cursor: pointer;
+  box-shadow:
+    3px 6px 20px rgba(0, 0, 0, 0.60),
+    inset 0 1px 0 rgba(255, 240, 200, 0.4);
+  transition:
+    box-shadow 0.28s ease,
+    filter 0.28s ease,
+    z-index 0s;
+  outline: none;
+}
+
+/* 個別の位置・回転 */
+.doc-paper:nth-child(1) {
+  top: 5px;  left: 75px;
+  transform: rotate(-4.5deg);
+  z-index: 4;
+  --lift: rotate(-4.5deg) translateY(-10px) scale(1.04);
+}
+.doc-paper:nth-child(2) {
+  top: 25px; left: 300px;
+  transform: rotate(3.2deg);
+  z-index: 3;
+  --lift: rotate(3.2deg) translateY(-10px) scale(1.04);
+}
+.doc-paper:nth-child(3) {
+  top: 118px; left: 22px;
+  transform: rotate(-1.2deg);
+  z-index: 2;
+  --lift: rotate(-1.2deg) translateY(-10px) scale(1.04);
+}
+.doc-paper:nth-child(4) {
+  top: 98px;  left: 272px;
+  transform: rotate(5.5deg);
+  z-index: 1;
+  --lift: rotate(5.5deg) translateY(-10px) scale(1.04);
+}
+
+.doc-paper:hover,
+.doc-paper:focus {
+  transform: var(--lift) !important;
+  box-shadow: 6px 14px 36px rgba(0, 0, 0, 0.75);
+  filter: brightness(1.05);
+  z-index: 20 !important;
+}
+
+/* 機密スタンプ */
+.doc-stamp {
+  position: absolute;
+  top: 10px; right: 10px;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgba(155, 26, 26, 0.72);
+  border: 1.5px solid rgba(155, 26, 26, 0.50);
+  padding: 2px 5px;
+  transform: rotate(7deg);
+}
+
+/* 書類タイトル */
+.doc-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-dark);
+  border-bottom: 1px solid rgba(100, 65, 25, 0.35);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  line-height: 1.45;
+}
+
+/* 罫線（文字の代わり） */
+.doc-ruled {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.doc-line {
+  display: block;
+  height: 1px;
+  background: rgba(100, 65, 25, 0.28);
+  border-radius: 1px;
+}
+.doc-line.short { width: 62%; }
+
+/* 抜粋テキスト */
+.doc-excerpt {
+  font-size: 9.5px;
+  color: var(--ink-mid);
+  line-height: 1.75;
+  opacity: 0.85;
+}
+
+/* 手書きメモ */
+.doc-handnote {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  font-size: 8px;
+  color: rgba(100, 60, 20, 0.55);
+  font-style: italic;
+  transform: rotate(-0.5deg);
+}
+
+/* コーヒーの輪染み（3枚目） */
+.doc-paper.has-ring::after {
+  content: '';
+  position: absolute;
+  top: 28px; right: 18px;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(50, 25, 8, 0.17);
+  background: radial-gradient(
+    ellipse, rgba(40, 18, 6, 0.06) 0%, transparent 65%
+  );
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   ⑤ 右手前：灰皿 + 煙パーティクル
+══════════════════════════════════════════════════════════ */
+#ashtray-wrap {
+  position: absolute;
+  bottom: 7%;
+  right: 5.5%;
+  width: 100px;
+  text-align: center;
+}
+
+/* 煙キャンバス（灰皿の真上） */
+#smoke-canvas {
+  display: block;
+  margin: 0 auto;
+  pointer-events: none;
+  /* filter: blur(0.5px) はJS側で各パーティクルに適用 */
+}
+
+#ashtray {
+  width: 72px;
+  height: 22px;
+  background: linear-gradient(
+    170deg, #686868 0%, #3c3c3c 55%, #4e4e4e 100%
+  );
+  border-radius: 50% / 45%;
+  border: 2px solid #282828;
+  box-shadow:
+    0 4px 10px rgba(0,0,0,0.65),
+    inset 0 -3px 6px rgba(0,0,0,0.4),
+    inset 0 1px 2px rgba(120,120,120,0.2);
+  position: relative;
+  margin: 0 auto;
+}
+
+.cig-stub {
+  position: absolute;
+  height: 5px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg, #ddd0b8 0%, #9a8a78 55%, #1e1412 100%
+  );
+}
+.cig-stub.s1 { width: 22px; top: 5px;  left:  5px; transform: rotate(-14deg); }
+.cig-stub.s2 { width: 17px; top: 8px;  left: 24px; transform: rotate(7deg); }
+.cig-stub.s3 { width: 14px; top: 5px;  right: 8px; transform: rotate(-4deg); }
+
+.ash-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 8px;
+  background: radial-gradient(ellipse, rgba(60,60,60,0.8) 0%, transparent 80%);
+  border-radius: 50%;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   考察トピックモーダル
+══════════════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 2, 1, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  backdrop-filter: blur(3px);
+}
+.modal-overlay.hidden { display: none; }
+
+.topic-modal-box {
+  width: min(640px, calc(100vw - 32px));
+  max-height: 80vh;
+  background: linear-gradient(155deg, #1a1008 0%, #0e0a04 100%);
+  border: 1px solid rgba(100, 65, 25, 0.45);
+  border-radius: 3px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.85);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.topic-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(100, 65, 25, 0.3);
+}
+
+.topic-cat-label {
+  font-size: 14px;
+  letter-spacing: 0.25em;
+  color: var(--amber);
+}
+
+.topic-close-btn {
+  background: transparent;
+  border: 1px solid rgba(200, 174, 130, 0.2);
+  color: var(--text-faded);
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.25s;
+}
+.topic-close-btn:hover {
+  border-color: var(--amber-dim);
+  color: var(--parchment);
+}
+
+.topic-modal-body {
+  padding: 24px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.topic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 準備中メッセージ */
+.coming-soon-msg {
+  text-align: center;
+  color: var(--text-faded);
+  font-size: 13px;
+  line-height: 2;
+  padding: 32px 0;
+}
+.coming-soon-sub {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: rgba(200, 174, 130, 0.3);
+}
+
+/* Firestoreから取得したトピックアイテム */
+.topic-item {
+  padding: 12px 14px;
+  border: 1px solid rgba(100, 65, 25, 0.25);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s;
+}
+.topic-item:hover {
+  background: rgba(200, 134, 10, 0.06);
+  border-color: var(--amber-dim);
+}
+.topic-item-title {
+  font-size: 12px;
+  color: var(--parchment);
+  margin-bottom: 4px;
+}
+.topic-item-meta {
+  font-size: 9px;
+  color: var(--text-faded);
+  letter-spacing: 0.1em;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   アクセシビリティ
+══════════════════════════════════════════════════════════ */
+.doc-paper:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   モバイル対応（縦画面 ≤ 640px）
+══════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  #desk { height: 82vh; }
+
+  #coffee-area  { top: 4%;  left: 4%;  transform: scale(0.75); transform-origin: top left; }
+  #pen-area     { top: 4%;  right: 3%; transform: scale(0.75); transform-origin: top right; }
+
+  #lab-artifact-wrap { top: 3%; }
+  #lab-3d-canvas { width: 90px; height: 90px; }
+
+  #documents {
+    width: calc(100vw - 20px);
+    height: auto;
+    top: 22%;
+    left: 10px;
+    transform: none;
+  }
+  .doc-paper {
+    width: calc(50% - 10px);
+    min-height: 180px;
+    font-size: 90%;
+    padding: 12px 10px 10px;
+  }
+  .doc-paper:nth-child(1) { top: 0;    left: 0;   transform: rotate(-2deg); }
+  .doc-paper:nth-child(2) { top: 0;    right: 0;  left: auto; transform: rotate(2deg); }
+  .doc-paper:nth-child(3) { top: 190px; left: 0;  transform: rotate(-1deg); }
+  .doc-paper:nth-child(4) { top: 190px; right: 0; left: auto; transform: rotate(3deg); }
+
+  #ashtray-wrap { bottom: 4%; right: 3%; transform: scale(0.85); transform-origin: bottom right; }
+
+  .lab-header-title { font-size: 9px; letter-spacing: 0.2em; }
+}
